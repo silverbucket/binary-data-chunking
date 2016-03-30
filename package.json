@@ -1,0 +1,19 @@
+{
+  "name": "binary-data-transfer",
+  "version": "1.0.0",
+  "description": "A simple binary data transfer protocol that simplifies sending large amounts of chunked binary data",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "binary",
+    "data",
+    "webrtc",
+    "chunked",
+    "transfer",
+    "file"
+  ],
+  "author": "Nick Jennings <nick@silverbucket.net>",
+  "license": "ISC"
+}
