@@ -15,5 +15,8 @@
     "file"
   ],
   "author": "Nick Jennings <nick@silverbucket.net>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "array-keys": "^2.1.2"
+  }
 }
