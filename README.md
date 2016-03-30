@@ -35,9 +35,9 @@ var file = new BDT({
     chunkSize: 16000 // chunkSize to use *before* meta-data additions.
 });
 
-file.getFileSize();  // returns actual file size based on ArrayBuffer
-file.getNumChunks(); // number of chunks that will be sent
-file.getChecksum();  // checksum based on ArrayBuffer
+file.getFileSize();   // returns actual file size based on ArrayBuffer
+file.getTotalChunks(); // total number of chunks that will be sent (based on file size and chunk size)
+file.getChecksum();   // checksum based on ArrayBuffer
 
 file.getMetadata();  // to be sent to other end to initialize the transfer, used to initialize a BDT instance on the receiving end.
 
@@ -66,3 +66,8 @@ BDT.submitChunk(chunk);
 ```
 
 With your `file` object instance, you can access the methods like `getNumChunks()`, `getFileSize()`, `getMetadata()`, `getChunk([num])` and once completed `getChecksum()`.
+
+
+## Known Issues
+
+The generation of a `uid` does have some collision potential, we we are limited in space, and also we do not know what `uid`s have already been generated on the receiving end(s) of the file transfer(s).

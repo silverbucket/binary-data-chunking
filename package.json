@@ -17,6 +17,7 @@
   "author": "Nick Jennings <nick@silverbucket.net>",
   "license": "ISC",
   "dependencies": {
-    "array-keys": "^2.1.2"
+    "array-keys": "^2.1.2",
+    "rand-token": "^0.2.1"
   }
 }
