@@ -29,7 +29,7 @@ You create a new `BDT` instance for each file you wish to transfer. The initiali
 #### Sending client
 ```javascript
 var file = new BDT({ 
-    name: 'sample.mp4',
+    fileName: 'sample.mp4',
     mimeType: 'video/mp4',
     arrayBuffer: ab, // must be in the ArrayBuffer format
     chunkSize: 16000 // chunkSize to use *before* meta-data additions.
