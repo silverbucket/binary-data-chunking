@@ -4,7 +4,7 @@
   "description": "A simple binary data transfer protocol that simplifies sending large amounts of chunked binary data",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/.bin/jaribu"
   },
   "keywords": [
     "binary",
@@ -17,7 +17,9 @@
   "author": "Nick Jennings <nick@silverbucket.net>",
   "license": "ISC",
   "dependencies": {
-    "array-keys": "^2.1.2",
-    "rand-token": "^0.2.1"
+    "array-keys": "^2.1.2"
+  },
+  "devDependencies": {
+    "jaribu": "^2.2.1"
   }
 }
