@@ -17,9 +17,16 @@
   "author": "Nick Jennings <nick@silverbucket.net>",
   "license": "ISC",
   "dependencies": {
-    "array-keys": "^2.1.2"
+    "array-keys": "^2.1.2",
+    "spark-md5": "^2.0.2"
   },
   "devDependencies": {
-    "jaribu": "^2.2.1"
+    "browserify": "^13.0.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-streamify": "^1.0.2",
+    "gulp-uglify": "^1.5.3",
+    "jaribu": "^2.2.1",
+    "vinyl-source-stream": "^1.1.0"
   }
 }
