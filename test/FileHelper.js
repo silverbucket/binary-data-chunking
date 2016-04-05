@@ -12,14 +12,14 @@ define([], function () {
             var data = fs.readFileSync('./test/' + fileName);
             var ab = new ArrayBuffer(data.byteLength);
             new Uint8Array(ab, 0, ab.byteLength).set(new Uint8Array(data));
-            cb(ab);
+            return cb(ab);
         } else {
             fetch('test.mp4').then(function (res) {
                 return res.blob();
             }).then(function (file) {
                 var reader = new FileReader();
                 reader.onload = function (event) {
-                    cb(event.target.result);
+                    return cb(event.target.result);
                 };
 
                 reader.onerror = function(event) {
@@ -28,9 +28,8 @@ define([], function () {
 
                 reader.readAsArrayBuffer(file, '');  
             }, function (err) {
-                console.log('err: ', err);
+                throw new Error(err);
             });
-            
         }
     }
     
