@@ -1,7 +1,7 @@
 {
-  "name": "binary-data-transfer",
+  "name": "binary-data-chunking",
   "version": "1.0.0",
-  "description": "A simple binary data transfer protocol that simplifies sending large amounts of chunked binary data",
+  "description": "A small library that simplifies sending large amounts of chunked binary data",
   "main": "src/index.js",
   "scripts": {
     "test": "node_modules/.bin/jaribu"
@@ -12,6 +12,7 @@
     "webrtc",
     "chunked",
     "transfer",
+    "chunking",
     "file"
   ],
   "author": "Nick Jennings <nick@silverbucket.net>",
