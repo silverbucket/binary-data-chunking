@@ -16,7 +16,7 @@
     "file"
   ],
   "author": "Nick Jennings <nick@silverbucket.net>",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "array-keys": "^2.1.2",
     "spark-md5": "^2.0.2"
