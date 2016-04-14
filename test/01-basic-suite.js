@@ -91,6 +91,24 @@ define(['require', './FileHelper.js'], function (require, FH) {
                             test.assert(checksum, env.sender.getChecksum());
                         });
                     }
+                },
+                {
+                    desc: '# delete',
+                    run: function (env, test) {
+                        env.receiver.getFile(function (file, checksum) {
+                            try {
+                                env.sender.clearData();
+                            } catch (e) {
+                                test.fail(e);
+                            }
+                            try {
+                                env.receiver.clearData();
+                            } catch (e) {
+                                test.fail(e);
+                            }
+                            test.assertType(env.sender._arrayBuffer, 'undefined');
+                        });
+                    }
                 }
             ]
         }

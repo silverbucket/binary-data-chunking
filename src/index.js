@@ -148,6 +148,13 @@ BDC.prototype.getChunk = function (num) {
     return chunk;
 };
 
+BDC.prototype.clearData = function () {
+    fileChunks.removeRecord(this.uid);
+    delete this._arrayBuffer;
+    delete this._metadata;  
+    delete this;
+};
+
 BDC.__pack = function (uid, pos, ab) {
     var chunk = new ArrayBuffer(ab.byteLength + RESERVED_BYTES);
     var view = new DataView(chunk);

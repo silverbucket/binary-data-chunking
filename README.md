@@ -45,6 +45,7 @@ file.getChunk([pos]); // will get next chunk, or optionally get the chunk based 
                       // note, the chunk will have header info embedded in the first few bytes, to receiving client 
                       // must also have an instance created based on the information returned from `file.getMetadata()`
 file.getPosition();  // returns the current number if chunks given from `getChunk()`
+file.clearData();    // removes arrayBuffer data and all stored information
 ```                    
 
 #### Receiving client
