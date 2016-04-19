@@ -35,16 +35,16 @@ var file = new BDC({
     chunkSize: 16000 // chunkSize to use *before* meta-data additions.
 });
 
-file.getFileSize();   // returns actual file size based on ArrayBuffer
-file.getTotalChunks(); // total number of chunks that will be sent (based on file size and chunk size)
-file.getChecksum();   // checksum based on ArrayBuffer
+file.fileSize;   // returns actual file size based on ArrayBuffer
+file.totalChunks; // total number of chunks that will be sent (based on file size and chunk size)
+file.checksum;   // checksum based on ArrayBuffer
 
 file.getMetadata();  // to be sent to other end to initialize the transfer, used to initialize a BDC instance on the receiving end.
 
 file.getChunk([pos]); // will get next chunk, or optionally get the chunk based on the number (position) specific. 
                       // note, the chunk will have header info embedded in the first few bytes, to receiving client 
                       // must also have an instance created based on the information returned from `file.getMetadata()`
-file.getPosition();  // returns the current number if chunks given from `getChunk()`
+file.chunksProcessed;  // returns the current number if chunks given from `getChunk()`
 file.clearData();    // removes arrayBuffer data and all stored information
 ```                    
 
@@ -65,10 +65,11 @@ file.onComplete(function (ab, metadata) {
 
 // when a binary chunk is received, we don't know yet which file object it belongs to, so we submit it to the Factory object and wait for the handler to be called
 BDC.submitChunk(chunk);
+
+file.generatedChecksum; // contains then generated checksum once a transfer is complete
 ```
 
-With your `file` object instance, you can access the methods like `getNumChunks()`, `getFileSize()`, `getMetadata()`, `getChunk()` and once completed `getChecksum()`.
-
+With your `file` object instance, you can access the methods like `totalChunks`, `fileSize`, `getMetadata()`, `getChunk()` and once completed `getFile()`.
 
 ## Known Issues
 

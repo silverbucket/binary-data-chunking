@@ -21,79 +21,67 @@ function appendBuffer(buffer1, buffer2) {
   return tmp.buffer;
 }
 
-function BDC(metadata) {
+function BDC(md) {
     var totalChunks, payloadSize, checksum;
-    if (typeof metadata !== 'object') { throw new Error('metadata object must be passed in'); }
-    if (! metadata.name) { throw new Error('no name specified'); }
-    if (! metadata.mimeType) { throw new Error('no mimeType specified'); }
-    if (! metadata.chunkSize) { throw new Error('no chunkSize specified'); }
-    if ((metadata.arrayBuffer) && 
-       ((typeof metadata.arrayBuffer.toString !== 'function') || (metadata.arrayBuffer.toString() !== '[object ArrayBuffer]'))) { 
+    if (typeof md !== 'object') { throw new Error('metadata object must be passed in'); }
+    if (! md.name) { throw new Error('no name specified'); }
+    if (! md.mimeType) { throw new Error('no mimeType specified'); }
+    if (! md.chunkSize) { throw new Error('no chunkSize specified'); }
+    if ((md.arrayBuffer) && 
+       ((typeof md.arrayBuffer.toString !== 'function') || (md.arrayBuffer.toString() !== '[object ArrayBuffer]'))) { 
         throw new Error('arrayBuffer must be an actual ArrayBuffer object'); 
-    } else if ((! metadata.arrayBuffer) && (! metadata.uid)) { 
+    } else if ((! md.arrayBuffer) && (! md.uid)) { 
         throw new Error('arrayBuffer or uid must be specified');
-    } else if ((metadata.arrayBuffer) && (metadata.uid)) {
+    } else if ((md.arrayBuffer) && (md.uid)) {
         throw new Error('cannot manually assign uid');
     } 
-    if (! metadata.uid) {
+    if (! md.uid) {
         // we have an arrayBuffer, so we create a UID  
-        metadata.uid = genUID();
+        md.uid = genUID();
     } 
-    if (metadata.arrayBuffer) {
+    if (md.arrayBuffer) {
         // this is a sender
         // we have an arrayBuffer, so let's calc total number of chunks
-        payloadSize = (metadata.chunkSize - RESERVED_BYTES)
-        totalChunks = Math.ceil(metadata.arrayBuffer.byteLength / payloadSize);
-        checksum = SparkMD5.ArrayBuffer.hash(metadata.arrayBuffer);
+        payloadSize = (md.chunkSize - RESERVED_BYTES)
+        totalChunks = Math.ceil(md.arrayBuffer.byteLength / payloadSize);
+        checksum = SparkMD5.ArrayBuffer.hash(md.arrayBuffer);
     } else {
-        checksum = metadata.checksum;
+        checksum = md.checksum;
     }
 
-    this.uid = metadata.uid;
-    this._metadata = {
-        uid: metadata.uid,
-        name: metadata.name,
-        mimeType: metadata.mimeType,
-        chunkSize: metadata.chunkSize,
-        payloadSize: payloadSize,
-        reservedSize: RESERVED_BYTES,
-        fileSize: (metadata.arrayBuffer) ? metadata.arrayBuffer.byteLength : 0,
-        totalChunks: (totalChunks) ? totalChunks : (metadata.totalChunks) ? metadata.totalChunks : 0,
-        checksum: checksum
-        // TODO calc checksums for every chunk
-    };
+    this.uid = md.uid;
+    this.name = md.name;
+    this.mimeType = md.mimeType;
+    this.chunkSize = md.chunkSize;
+    this.payloadSize = payloadSize;
+    this.reservedSize = RESERVED_BYTES;
+    this.fileSize = (md.arrayBuffer) ? md.arrayBuffer.byteLength : 0;
+    this.totalChunks = (totalChunks) ? totalChunks : (md.totalChunks) ? md.totalChunks : 0;
+    this.checksum = checksum;
+    this.generatedChecksum;
+    this.chunksProcessed = 0;
+    // TODO calc checksums for every chunk
     
-    this._arrayBuffer = (metadata.arrayBuffer) ? metadata.arrayBuffer : null,
-    this._chunksProcessed = 0;
+    this._arrayBuffer = (md.arrayBuffer) ? md.arrayBuffer : null,
     this._chunks = [];
 
-    if (! metadata.arrayBuffer) {
+    if (! md.arrayBuffer) {
         fileChunks.addRecord(this);
     }
 }
 
 BDC.prototype.getMetadata = function () {
-    return this._metadata;
-};
-
-BDC.prototype.getUID = function () {
-    return this.uid;
-};
-
-BDC.prototype.getFileSize = function () {
-    return this._metadata.fileSize;
-};
-
-BDC.prototype.getTotalChunks = function () {
-    return this._metadata.totalChunks;
-};
-
-BDC.prototype.getChecksum = function () {
-    return this._metadata.checksum;
-};
-
-BDC.prototype.getGeneratedChecksum = function () {
-    return this._metadata.generatedChecksum;
+    return {
+        uid: this.uid,
+        name: this.name,
+        mimeType: this.mimeType,
+        chunkSize: this.chunkSize,
+        payloadSize: this.payloadSize,
+        reservedSize: this.reservedSize,
+        fileSize: this.fileSize,
+        totalChunks: this.totalChunks,
+        checksum: this.checksum
+    };    
 };
 
 BDC.prototype.getFile = function (cb) {
@@ -102,23 +90,19 @@ BDC.prototype.getFile = function (cb) {
         // console.log('buffer; ' + this._arrayBuffer.byteLength);
         this._arrayBuffer = appendBuffer(this._arrayBuffer, this._chunks[i]);
     }
-    this._metadata.generatedChecksum = SparkMD5.ArrayBuffer.hash(this._arrayBuffer);
-    cb(this._arrayBuffer, this._metadata.generatedChecksum);
+    this.generatedChecksum = SparkMD5.ArrayBuffer.hash(this._arrayBuffer);
+    cb(this._arrayBuffer, this.generatedChecksum);
 };
 
 BDC.prototype.onChunkReceived = function () {};
 
 BDC.prototype.onCompleted = function () {};
 
-BDC.prototype.getPosition = function () {
-    return this._chunksProcessed;    
-};
-
 BDC.prototype.forEachChunk = function (cb, end) {
     var chunk;
-    for (var i = 0; i < this._metadata.totalChunks; i += 1) {
+    for (var i = 0; i < this.totalChunks; i += 1) {
         if (chunk = this.getChunk()) {
-            cb(chunk, this.getPosition());
+            cb(chunk, this.chunksProcessed);
         } else {
             end();
         }
@@ -126,7 +110,7 @@ BDC.prototype.forEachChunk = function (cb, end) {
 };
 
 BDC.prototype.getChunk = function (num) {
-    var _adjustedPosition = this._chunksProcessed + 1
+    var _adjustedPosition = this.chunksProcessed + 1
     if (typeof num === 'number') {
         if (num <= 0) {
             return undefined;
@@ -137,18 +121,18 @@ BDC.prototype.getChunk = function (num) {
         num = undefined;
     }
     
-    var start = (this._metadata.payloadSize * _adjustedPosition) - this._metadata.payloadSize;
-    if (start >= this._metadata.fileSize) {
+    var start = (this.payloadSize * _adjustedPosition) - this.payloadSize;
+    if (start >= this.fileSize) {
         return undefined;
     }
-    var end = start + this._metadata.payloadSize;
-    end = (end > this._metadata.fileSize) ? this._metadata.fileSize : end;
+    var end = start + this.payloadSize;
+    end = (end > this.fileSize) ? this.fileSize : end;
     
     var payload = this._arrayBuffer.slice(start, end);
-    var chunk = BDC.__pack(this._metadata.uid, _adjustedPosition, payload);
+    var chunk = BDC.__pack(this.uid, _adjustedPosition, payload);
     
     if (! num) {
-        this._chunksProcessed += 1;
+        this.chunksProcessed += 1;
     }
     
     return chunk;
@@ -157,7 +141,6 @@ BDC.prototype.getChunk = function (num) {
 BDC.prototype.clearData = function () {
     fileChunks.removeRecord(this.uid);
     delete this._arrayBuffer;
-    delete this._metadata;  
     delete this;
 };
 
@@ -194,10 +177,10 @@ BDC.submitChunk = function (chunk) {
     }
 
     file._chunks[pos - 1] = ab;
-    file._chunksProcessed += 1;
+    file.chunksProcessed += 1;
     file.onChunkReceived(ab, pos);
     
-    if (file.getPosition() === file.getTotalChunks()) {
+    if (file.chunksProcessed === file.totalChunks) {
         // TODO 
         // - add merged ArrayBuffer 
         // - verify checksum
