@@ -1084,7 +1084,7 @@ BDC.__pack = function (uid, pos, ab) {
     return chunk;
 }
 
-BDC.__unpack = function (chunk) {
+BDC.unpack = function (chunk) {
     var view = new DataView(chunk);
     var uid = view.getInt32(UID_OFFSET);
     var pos = view.getInt32(POSITION_OFFSET);
@@ -1097,7 +1097,7 @@ BDC.__unpack = function (chunk) {
 // BDC Factory methods
 //
 BDC.submitChunk = function (chunk) {
-    var unpacked = this.__unpack(chunk);
+    var unpacked = this.unpack(chunk);
     var uid = unpacked[0],
         pos = unpacked[1],
         ab  = unpacked[2];
