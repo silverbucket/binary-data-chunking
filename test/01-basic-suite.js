@@ -43,12 +43,16 @@ define(['require', './FileHelper.js'], function (require, FH) {
                     }
                 },
                 {
-                    desc: '# get first chunk and verify positioning',
+                    desc: '# get first chunk, verify positioning, packed size and payload size',
                     run: function (env, test) {
                         var chunk = env.sender.getChunk();
                         test.assertAnd(chunk.byteLength, 16000)
                         env.BDC.submitChunk(chunk);
-                        test.assert(env.sender.chunksProcessed, 1);      
+                        test.assertAnd(env.sender.chunksProcessed, 1);      
+                        test.assertAnd(env.sender.chunkSize, chunk.byteLength);  
+                        // get payload
+                        var payload = env.BDC.unpack(chunk)[2];
+                        test.assert(env.sender.payloadSize, payload.byteLength);         
                     }
                 },
                 {
