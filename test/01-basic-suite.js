@@ -43,12 +43,20 @@ define(['require', './FileHelper.js'], function (require, FH) {
                     }
                 },
                 {
+                    desc: '# create transfer object',
+                    run: function (env, test) {
+                        env.sto = env.sender.getTransferObject();
+                        test.assertTypeAnd(env.sto, 'object');
+                        test.assertType(env.sto.currentIndex, 'number');
+                    }
+                },
+                {
                     desc: '# get first chunk, verify positioning, packed size and payload size',
                     run: function (env, test) {
-                        var chunk = env.sender.getChunk();
+                        var chunk = env.sto.getChunk();
                         test.assertAnd(chunk.byteLength, 16000)
                         env.BDC.submitChunk(chunk);
-                        test.assertAnd(env.sender.chunksProcessed, 1);      
+                        test.assertAnd(env.sto.currentIndex, 1);      
                         test.assertAnd(env.sender.chunkSize, chunk.byteLength);  
                         // get payload
                         var payload = env.BDC.unpack(chunk)[2];
@@ -58,27 +66,28 @@ define(['require', './FileHelper.js'], function (require, FH) {
                 {
                     desc: '# check receiver position',
                     run: function (env, test) {
-                        test.assert(env.receiver.chunksProcessed, 1);
+                        test.assert(env.receiver.chunksReceived, 1);
                     }
                 },
                 {
                     desc: '# get ordered chunks',
                     run: function (env, test) {
-                        env.sender.forEachChunk(function (chunk, pos) {
-                            if (pos < 67) {
+                        env.sto.forEachChunk(function (chunk, pos) {
+                            console.log('foreach [' + pos + '] ' + chunk.byteLength);
+                            if (pos < env.totalChunks - 1) {
                                 test.assertAnd(chunk.byteLength, 16000);
                             }
                             env.BDC.submitChunk(chunk);
                         }, function () {
                             // done
-                            test.assert(env.sender.chunksProcessed, env.totalChunks);
+                            test.assert(env.sto.currentIndex, env.totalChunks);
                         });
                     }
                 },
                 {
                     desc: '# check receiver position number',
                     run: function (env, test) {
-                        test.assert(env.receiver.chunksProcessed, 67);
+                        test.assert(env.receiver.chunksReceived, 67);
                     }
                 },
                 {

@@ -5,7 +5,7 @@ var RESERVED_BYTES = 8;
 var UID_OFFSET = 0;
 var POSITION_OFFSET = 4;
 
-var fileChunks = new ArrayKeys({
+var files = new ArrayKeys({
     identifier: 'uid'
 });
 
@@ -22,7 +22,7 @@ function appendBuffer(buffer1, buffer2) {
 }
 
 function BDC(md) {
-    var totalChunks, payloadSize, checksum;
+    var totalChunks, payloadSize, checksum, existsLocally;
     if (typeof md !== 'object') { throw new Error('metadata object must be passed in'); }
     if (! md.name) { throw new Error('no name specified'); }
     if (! md.mimeType) { throw new Error('no mimeType specified'); }
@@ -45,12 +45,14 @@ function BDC(md) {
         payloadSize = (md.chunkSize - RESERVED_BYTES)
         totalChunks = Math.ceil(md.arrayBuffer.byteLength / payloadSize);
         checksum = SparkMD5.ArrayBuffer.hash(md.arrayBuffer);
+        existsLocally = true;
     } else {
         checksum = md.checksum;
     }
 
     this.uid = md.uid;
     this.name = md.name;
+    this.existsLocally = existsLocally || false;
     this.mimeType = md.mimeType;
     this.chunkSize = md.chunkSize;
     this.payloadSize = payloadSize;
@@ -59,15 +61,17 @@ function BDC(md) {
     this.totalChunks = (totalChunks) ? totalChunks : (md.totalChunks) ? md.totalChunks : 0;
     this.checksum = checksum;
     this.generatedChecksum;
-    this.chunksProcessed = 0;
+    this.currentIndex = 0;
+    this.chunksReceived = 0;
     // TODO calc checksums for every chunk
     
-    this._arrayBuffer = (md.arrayBuffer) ? md.arrayBuffer : null,
+    this._arrayBuffer = (md.arrayBuffer) ? md.arrayBuffer : null;
     this._chunks = [];
 
-    if (! md.arrayBuffer) {
-        fileChunks.addRecord(this);
-    }
+    // if (! md.arrayBuffer) {
+    //     files.addRecord(this);
+    // }
+    files.addRecord(this);
 }
 
 BDC.prototype.getMetadata = function () {
@@ -98,48 +102,35 @@ BDC.prototype.onChunkReceived = function () {};
 
 BDC.prototype.onCompleted = function () {};
 
-BDC.prototype.forEachChunk = function (cb, end) {
-    var chunk;
-    for (var i = 0; i < this.totalChunks; i += 1) {
-        if (chunk = this.getChunk()) {
-            cb(chunk, this.chunksProcessed);
-        } else {
-            end();
-        }
-    }
+BDC.prototype.getTransferObject = function () {
+    return new TransferObject(this);  
 };
 
-BDC.prototype.getChunk = function (num) {
-    var _adjustedPosition = this.chunksProcessed + 1
-    if (typeof num === 'number') {
-        if (num <= 0) {
+BDC.prototype.__getUnpackedChunk = function (num) {
+    var payload;
+
+    
+    if (this._arrayBuffer) {
+        // get payload from full arrayBuffer
+        var start = (this.payloadSize * (num + 1)) - this.payloadSize;
+        if (start >= this.fileSize) {
             return undefined;
-        } else {
-            _adjustedPosition = num;
-        }    
+        }
+        var end = start + this.payloadSize;
+        end = (end > this.fileSize) ? this.fileSize : end;
+        
+        payload = this._arrayBuffer.slice(start, end);
     } else {
-        num = undefined;
+        if (this._chunks[num]) {
+            payload = this._chunks[num];
+        }
     }
     
-    var start = (this.payloadSize * _adjustedPosition) - this.payloadSize;
-    if (start >= this.fileSize) {
-        return undefined;
-    }
-    var end = start + this.payloadSize;
-    end = (end > this.fileSize) ? this.fileSize : end;
-    
-    var payload = this._arrayBuffer.slice(start, end);
-    var chunk = BDC.__pack(this.uid, _adjustedPosition, payload);
-    
-    if (! num) {
-        this.chunksProcessed += 1;
-    }
-    
-    return chunk;
+    return payload;
 };
 
 BDC.prototype.clearData = function () {
-    fileChunks.removeRecord(this.uid);
+    files.removeRecord(this.uid);
     delete this._arrayBuffer;
     delete this;
 };
@@ -171,24 +162,98 @@ BDC.submitChunk = function (chunk) {
         pos = unpacked[1],
         ab  = unpacked[2];
     
-    var file = fileChunks.getRecord(uid);
+    var file = files.getRecord(uid);
     if (! file) {
         return false;
     }
 
-    file._chunks[pos - 1] = ab;
-    file.chunksProcessed += 1;
+    file._chunks[pos] = ab;
+    file.chunksReceived += 1;
     file.onChunkReceived(ab, pos);
     
-    if (file.chunksProcessed === file.totalChunks) {
+    if (file.chunksReceived === file.totalChunks) {
         // TODO 
         // - add merged ArrayBuffer 
         // - verify checksum
         // - call onComplete with ab and metdata as params
+        file.existsLocally = true;
         file.onCompleted(); 
     }
-    fileChunks.addRecord(file);
+    files.addRecord(file);
     return true;
 };
+
+BDC.getFileObject = function (uid) {
+    return files.getRecord(parseInt(uid));
+};
+
+
+function TransferObject(scope) {
+    this.scope = scope;
+    this.currentIndex = 0;
+}
+
+TransferObject.prototype.forEachChunk = function (cb, end) {
+    var chunk, i = 0;
+    
+    for (; this.currentIndex < this.scope.totalChunks;) {
+        i = this.currentIndex;
+        if (chunk = this.getChunk()) {
+            cb(chunk, i);
+        }
+    }
+    end();
+};
+
+TransferObject.prototype.forEachReceivedChunk = function (cb, end) {
+    var payload, i = 0;
+    
+    var _intervalHandler = setInterval(function () {
+        i = this.currentIndex;
+        if (payload = this.getUnpackedChunk()) {
+            return cb(chunk, i);
+        } else if (this.currentIndex === self.totalChunks - 1) {
+            clearInterval(_intervalHandler);
+            return end();
+        }
+    }.bind(this), 100);
+};
+
+TransferObject.prototype.getChunk = function (num) {
+    var _num = this.currentIndex, payload, chunk;
+        
+    if (typeof num === 'number') {
+        if (num < 0) {
+            return undefined;
+        } else {
+            _num = num;
+        }   
+    }
+    
+    if (payload = this.scope.__getUnpackedChunk(_num)) {
+        chunk = BDC.__pack(this.scope.uid, this.currentIndex, payload);
+        if ((chunk) && (typeof num !== 'number')) {
+            this.currentIndex += 1;
+        }
+    }
+    return chunk;
+};
+
+TransferObject.prototype.getUnpackedChunk = function (num) {
+    var _num = this.currentIndex, payload;
+        
+    if (typeof num === 'number') {
+        if (num < 0) {
+            return undefined;
+        } else {
+            _num = num;
+        }   
+    }
+    
+    if ((payload = this.scope.__getUnpackedChunk(_num)) && (typeof num !== 'number')) {
+        this.currentIndex += 1;
+    }
+    return payload;
+}
 
 module.exports = BDC;

@@ -41,11 +41,15 @@ file.checksum;   // checksum based on ArrayBuffer
 
 file.getMetadata();  // to be sent to other end to initialize the transfer, used to initialize a BDC instance on the receiving end.
 
-file.getChunk([pos]); // will get next chunk, or optionally get the chunk based on the number (position) specific. 
-                      // note, the chunk will have header info embedded in the first few bytes, to receiving client 
-                      // must also have an instance created based on the information returned from `file.getMetadata()`
-file.chunksProcessed;  // returns the current number if chunks given from `getChunk()`
 file.clearData();    // removes arrayBuffer data and all stored information
+
+var to = file.getTransferObject(); // unique instance to track the transfering of each chunk 
+
+to.getChunk([pos]); // will get next chunk, or optionally get the chunk based on the number (position) specific. 
+                    // note, the chunk will have header info embedded in the first few bytes, to receiving client 
+                    // must also have an instance created based on the information returned from `file.getMetadata()`
+to.currentIndex;    // returns the current number if chunks given from `getChunk()`
+                      
 ```                    
 
 #### Receiving client
@@ -62,6 +66,9 @@ file.onChunkReceived(function (ab, pos) {
 file.onComplete(function (ab, metadata) {
    // here you receive the completed ArrayBuffer object along with it's metadata 
 });
+
+var to = file.getTransferObject();
+var payload = to.getUnpackedChunk(); // next ordered arrayBuffer without the binary metadata bits
 
 // when a binary chunk is received, we don't know yet which file object it belongs to, so we submit it to the Factory object and wait for the handler to be called
 BDC.submitChunk(chunk);
