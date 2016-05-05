@@ -39,7 +39,10 @@ define(['require', './FileHelper.js'], function (require, FH) {
                     desc: '# create receiver',
                     run: function (env, test) {
                         env.receiver = new env.BDC(env.sender.getMetadata());
-                        test.assert(env.receiver.totalChunks, env.totalChunks);
+                        test.assertAnd(env.receiver.fileSize, env.sender.fileSize, 'fileSize');
+                        test.assertAnd(env.receiver.chunkSize, 16000, 'chunkSize');
+                        test.assertAnd(env.receiver.payloadSize, env.sender.payloadSize, 'payloadSize');
+                        test.assert(env.receiver.totalChunks, env.totalChunks, 'totalChunks');
                     }
                 },
                 {
@@ -54,13 +57,13 @@ define(['require', './FileHelper.js'], function (require, FH) {
                     desc: '# get first chunk, verify positioning, packed size and payload size',
                     run: function (env, test) {
                         var chunk = env.sto.getChunk();
-                        test.assertAnd(chunk.byteLength, 16000)
+                        test.assertAnd(chunk.byteLength, 16000, 'byteLength ' + chunk.byteLength + ' != ' + 16000)
                         env.BDC.submitChunk(chunk);
-                        test.assertAnd(env.sto.currentIndex, 1);      
-                        test.assertAnd(env.sender.chunkSize, chunk.byteLength);  
+                        test.assertAnd(env.sto.currentIndex, 1, 'currentIndex');      
+                        test.assertAnd(env.sender.chunkSize, chunk.byteLength, 'chunkSize === byteLength');  
                         // get payload
                         var payload = env.BDC.unpack(chunk)[2];
-                        test.assert(env.sender.payloadSize, payload.byteLength);         
+                        test.assert(env.sender.payloadSize, payload.byteLength, 'payloadSize === byteLength');         
                     }
                 },
                 {
@@ -73,7 +76,7 @@ define(['require', './FileHelper.js'], function (require, FH) {
                     desc: '# get ordered chunks',
                     run: function (env, test) {
                         env.sto.forEachChunk(function (chunk, pos) {
-                            console.log('foreach [' + pos + '] ' + chunk.byteLength);
+                            // console.log('foreach [' + pos + '] ' + chunk.byteLength);
                             if (pos < env.totalChunks - 1) {
                                 test.assertAnd(chunk.byteLength, 16000);
                             }
