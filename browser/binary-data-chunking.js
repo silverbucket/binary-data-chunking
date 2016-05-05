@@ -986,9 +986,9 @@ function BDC(md) {
     this.existsLocally = existsLocally || false;
     this.mimeType = md.mimeType;
     this.chunkSize = md.chunkSize;
-    this.payloadSize = payloadSize;
+    this.payloadSize = payloadSize || md.payloadSize;
     this.reservedSize = RESERVED_BYTES;
-    this.fileSize = (md.arrayBuffer) ? md.arrayBuffer.byteLength : 0;
+    this.fileSize = (md.arrayBuffer) ? md.arrayBuffer.byteLength : md.fileSize;
     this.totalChunks = (totalChunks) ? totalChunks : (md.totalChunks) ? md.totalChunks : 0;
     this.checksum = checksum;
     this.generatedChecksum;
@@ -1040,7 +1040,6 @@ BDC.prototype.getTransferObject = function () {
 BDC.prototype.__getUnpackedChunk = function (num) {
     var payload;
 
-    
     if (this._arrayBuffer) {
         // get payload from full arrayBuffer
         var start = (this.payloadSize * (num + 1)) - this.payloadSize;
@@ -1160,7 +1159,6 @@ TransferObject.prototype.getChunk = function (num) {
             _num = num;
         }   
     }
-    
     if (payload = this.scope.__getUnpackedChunk(_num)) {
         chunk = BDC.__pack(this.scope.uid, this.currentIndex, payload);
         if ((chunk) && (typeof num !== 'number')) {
@@ -1180,7 +1178,6 @@ TransferObject.prototype.getUnpackedChunk = function (num) {
             _num = num;
         }   
     }
-    
     if ((payload = this.scope.__getUnpackedChunk(_num)) && (typeof num !== 'number')) {
         this.currentIndex += 1;
     }
